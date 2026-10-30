@@ -131,9 +131,7 @@ exports[`FlowRow 1`] = `
         </td>
         <td
           class="col-time"
-        >
-          5s
-        </td>
+        />
         <td
           class="col-quickactions"
         >
@@ -262,9 +260,7 @@ exports[`FlowRow 1`] = `
         </td>
         <td
           class="col-time"
-        >
-          1s
-        </td>
+        />
         <td
           class="col-quickactions"
         />

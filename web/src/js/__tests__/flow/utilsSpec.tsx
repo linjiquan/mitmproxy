@@ -184,3 +184,37 @@ describe("getResourceType", () => {
         expect(utils.getResourceType(httpFlow(200))).toEqual("plain");
     });
 });
+
+describe("getProtocol", () => {
+    it("labels HTTP/3 as QUIC and preserves other HTTP versions", () => {
+        const flow = THTTPFlow();
+        flow.request.http_version = "HTTP/3";
+        expect(utils.getProtocol(flow)).toBe("HTTP/3 (QUIC)");
+        flow.request.http_version = "HTTP/2.0";
+        expect(utils.getProtocol(flow)).toBe("HTTP/2.0");
+    });
+
+    it("labels non-HTTP flows and QUIC connections", () => {
+        expect(utils.getProtocol(TUDPFlow())).toBe("UDP");
+        expect(utils.getProtocol(TDNSFlow())).toBe("DNS");
+        const flow = TUDPFlow();
+        flow.client_conn.tls_version = "QUICv1";
+        expect(utils.getProtocol(flow)).toBe("QUIC");
+    });
+});
+
+describe("captureTimeline", () => {
+    it("numbers requests by initiation time independent of list order", () => {
+        const first = THTTPFlow();
+        const second = { ...THTTPFlow(), id: "second" };
+        first.request.timestamp_start = 100;
+        second.request.timestamp_start = 102.125;
+        const timeline = utils.captureTimeline([second, first]);
+        expect(timeline.start).toBe(100);
+        expect(timeline.numbers.get(first.id)).toBe(1);
+        expect(timeline.numbers.get(second.id)).toBe(2);
+        expect((utils.captureTime(second) - timeline.start).toFixed(6)).toBe(
+            "2.125000",
+        );
+    });
+});

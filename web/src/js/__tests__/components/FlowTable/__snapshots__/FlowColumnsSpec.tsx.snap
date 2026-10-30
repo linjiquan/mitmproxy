@@ -441,9 +441,7 @@ exports[`Flowcolumns Components should render TimeColumn 1`] = `
       <tr>
         <td
           class="col-time"
-        >
-          5s
-        </td>
+        />
       </tr>
     </tbody>
   </table>
@@ -457,9 +455,7 @@ exports[`Flowcolumns Components should render TimeColumn 2`] = `
       <tr>
         <td
           class="col-time"
-        >
-          5s
-        </td>
+        />
       </tr>
     </tbody>
   </table>
@@ -597,6 +593,22 @@ exports[`should render columns: comment 1`] = `
 </DocumentFragment>
 `;
 
+exports[`should render columns: duration 1`] = `
+<DocumentFragment>
+  <table>
+    <tbody>
+      <tr>
+        <td
+          class="col-duration"
+        >
+          5s
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</DocumentFragment>
+`;
+
 exports[`should render columns: icon 1`] = `
 <DocumentFragment>
   <table>
@@ -675,6 +687,20 @@ exports[`should render columns: method 1`] = `
 </DocumentFragment>
 `;
 
+exports[`should render columns: no 1`] = `
+<DocumentFragment>
+  <table>
+    <tbody>
+      <tr>
+        <td
+          class="col-no"
+        />
+      </tr>
+    </tbody>
+  </table>
+</DocumentFragment>
+`;
+
 exports[`should render columns: path 1`] = `
 <DocumentFragment>
   <table>
@@ -712,6 +738,22 @@ exports[`should render columns: path 1`] = `
             class="marker float-right"
           />
           http://address:22/path
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</DocumentFragment>
+`;
+
+exports[`should render columns: protocol 1`] = `
+<DocumentFragment>
+  <table>
+    <tbody>
+      <tr>
+        <td
+          class="col-protocol"
+        >
+          HTTP/1.1
         </td>
       </tr>
     </tbody>
@@ -776,9 +818,7 @@ exports[`should render columns: time 1`] = `
       <tr>
         <td
           class="col-time"
-        >
-          5s
-        </td>
+        />
       </tr>
     </tbody>
   </table>

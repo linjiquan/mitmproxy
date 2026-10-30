@@ -7,12 +7,13 @@ import FlowTableHead from "./FlowTable/FlowTableHead";
 import FlowRow from "./FlowTable/FlowRow";
 import type { Flow } from "../flow";
 import type { AppDispatch, RootState } from "../ducks";
-import { isValidColumnName } from "../flow/utils";
+import { captureTimeline, isValidColumnName } from "../flow/utils";
 import type { ColumnWidths } from "../ducks/ui/columnWidths";
 import { commitColumnWidths, setColumnWidths } from "../ducks/ui/columnWidths";
 
 type FlowTableProps = {
     flowView: Flow[];
+    allFlows: Flow[];
     rowHeight: number;
     highlightedIds: Set<string>;
     selectedIds: Set<string>;
@@ -38,6 +39,8 @@ export class PureFlowTable extends React.Component<
     };
     private viewport = React.createRef<HTMLDivElement>();
     private head = React.createRef<HTMLTableSectionElement>();
+    private timelineFlows?: Flow[];
+    private timeline?: ReturnType<typeof captureTimeline>;
 
     constructor(props: FlowTableProps) {
         super(props);
@@ -157,10 +160,19 @@ export class PureFlowTable extends React.Component<
         }
     }
 
+    private getTimeline(flows: Flow[]) {
+        if (this.timelineFlows !== flows) {
+            this.timelineFlows = flows;
+            this.timeline = captureTimeline(flows);
+        }
+        return this.timeline!;
+    }
+
     render() {
         const { vScroll, viewportTop } = this.state;
         const {
             flowView,
+            allFlows,
             selectedIds,
             highlightedIds,
             displayColumnNames,
@@ -168,6 +180,8 @@ export class PureFlowTable extends React.Component<
             rowHeight,
             columnWidths,
         } = this.props;
+
+        const timeline = this.getTimeline(allFlows);
 
         const orderedColumns = displayColumnNames
             .filter(isValidColumnName)
@@ -223,6 +237,10 @@ export class PureFlowTable extends React.Component<
                                     highlighted={highlightedIds.has(flow.id)}
                                     displayColumnNames={displayColumnNames}
                                     rowNumber={listIndex.get(flow.id)!}
+                                    sequenceNumber={timeline.numbers.get(
+                                        flow.id,
+                                    )}
+                                    captureStart={timeline.start}
                                     height={rowHeight}
                                 />
                             ))}
@@ -236,6 +254,7 @@ export class PureFlowTable extends React.Component<
 
 export default connect((state: RootState) => ({
     flowView: state.flows.view,
+    allFlows: state.flows.list,
     highlightedIds: state.flows.highlightedIds,
     selectedIds: state.flows.selectedIds,
     onlySelectedId:

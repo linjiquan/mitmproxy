@@ -315,19 +315,53 @@ export const getVersion = (flow: Flow): string => {
     }
 };
 
+export const getProtocol = (flow: Flow): string => {
+    if (flow.type === "http") {
+        return flow.request.http_version === "HTTP/3"
+            ? "HTTP/3 (QUIC)"
+            : flow.request.http_version;
+    }
+    return flow.client_conn.tls_version === "QUICv1"
+        ? "QUIC"
+        : flow.type.toUpperCase();
+};
+
+export const captureTime = (flow: Flow): number =>
+    startTime(flow) ?? flow.timestamp_created;
+
+export function captureTimeline(flows: Flow[]): {
+    numbers: Map<string, number>;
+    start: number;
+} {
+    // Sequence numbers are based on initiation time, independent of the current
+    // view's filter, sorting, or reversed display order.
+    const ordered = [...flows].sort(
+        (a, b) => captureTime(a) - captureTime(b) || a.id.localeCompare(b.id),
+    );
+    return {
+        numbers: new Map(ordered.map((flow, i) => [flow.id, i + 1])),
+        start: ordered.length ? captureTime(ordered[0]) : 0,
+    };
+}
+
 export const sortFunctions = {
     tls: (flow: Flow) => flow.type === "http" && flow.request.scheme,
     icon: getResourceType,
     index: () => 0, // this is broken right now - ideally we switch to uuid7s on the backend and use that.
+    no: captureTime,
     path: mainPath,
     method: getMethod,
     version: getVersion,
+    protocol: getProtocol,
     status: statusCode,
     size: getTotalSize,
-    time: (flow: Flow) => {
+    time: captureTime,
+    duration: (flow: Flow) => {
         const start = startTime(flow);
         const end = endTime(flow);
-        return start && end && end - start;
+        return start !== undefined && end !== undefined
+            ? end - start
+            : undefined;
     },
     timestamp: startTime,
     quickactions: () => 0,

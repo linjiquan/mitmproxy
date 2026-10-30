@@ -94,7 +94,7 @@ class WebAddon:
         loader.add_option(
             "web_columns",
             Sequence[str],
-            ["tls", "icon", "path", "method", "status", "size", "time"],
+            ["no", "time", "tls", "icon", "path", "method", "protocol", "status", "size", "duration"],
             f"Columns to show in the flow list. Can be one of the following: {', '.join(AVAILABLE_WEB_COLUMNS)}",
         )
         loader.add_option(

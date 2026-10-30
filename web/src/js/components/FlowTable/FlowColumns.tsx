@@ -14,6 +14,8 @@ import {
     statusCode,
     getMethod,
     getVersion,
+    getProtocol,
+    captureTime,
 } from "../../flow/utils";
 import { formatSize, formatTimeDelta, formatTimeStamp } from "../../utils";
 import * as flowActions from "../../ducks/flows";
@@ -25,6 +27,8 @@ import Badge from "../common/Badge";
 type FlowColumnProps = {
     flow: Flow;
     rowNumber: number;
+    sequenceNumber?: number;
+    captureStart?: number;
 };
 
 interface FlowColumn {
@@ -51,6 +55,11 @@ export const index: FlowColumn = ({ rowNumber }) => {
     return <td className="col-index">{rowNumber + 1}</td>;
 };
 index.headerName = "#";
+
+export const no: FlowColumn = ({ sequenceNumber }) => (
+    <td className="col-no">{sequenceNumber ?? ""}</td>
+);
+no.headerName = "No";
 
 const RESOURCE_ICONS: Record<ResourceType, IconName> = {
     plain: "file",
@@ -134,6 +143,11 @@ export const version: FlowColumn = ({ flow }) => (
 );
 version.headerName = "Version";
 
+export const protocol: FlowColumn = ({ flow }) => (
+    <td className="col-protocol">{getProtocol(flow)}</td>
+);
+protocol.headerName = "Protocol";
+
 export const status: FlowColumn = ({ flow }) => {
     const code = statusCode(flow);
     if (code === undefined || code === "") return <td className="col-status" />;
@@ -153,16 +167,27 @@ export const size: FlowColumn = ({ flow }) => {
 };
 size.headerName = "Size";
 
-export const time: FlowColumn = ({ flow }) => {
+export const time: FlowColumn = ({ flow, captureStart }) => (
+    <td className="col-time">
+        {captureStart === undefined
+            ? ""
+            : (captureTime(flow) - captureStart).toFixed(6)}
+    </td>
+);
+time.headerName = "Time";
+
+export const duration: FlowColumn = ({ flow }) => {
     const start = startTime(flow);
     const end = endTime(flow);
     return (
-        <td className="col-time">
-            {start && end ? formatTimeDelta(1000 * (end - start)) : "..."}
+        <td className="col-duration">
+            {start !== undefined && end !== undefined
+                ? formatTimeDelta(1000 * (end - start))
+                : "..."}
         </td>
     );
 };
-time.headerName = "Time";
+duration.headerName = "Duration";
 
 export const timestamp: FlowColumn = ({ flow }) => {
     const start = startTime(flow);
@@ -218,13 +243,16 @@ const FlowColumns: { [key in keyof typeof sortFunctions]: FlowColumn } = {
     // parsed by web/gen/web_columns
     icon,
     index,
+    no,
     method,
     version,
+    protocol,
     path,
     quickactions,
     size,
     status,
     time,
+    duration,
     timestamp,
     tls,
     comment,

@@ -12,6 +12,8 @@ type FlowRowProps = {
     highlighted: boolean;
     displayColumnNames: string[];
     rowNumber: number;
+    sequenceNumber?: number;
+    captureStart?: number;
     height: number;
 };
 
@@ -21,6 +23,8 @@ export default React.memo(function FlowRow({
     highlighted,
     displayColumnNames,
     rowNumber,
+    sequenceNumber,
+    captureStart,
     height,
 }: FlowRowProps) {
     const dispatch = useAppDispatch();
@@ -56,7 +60,13 @@ export default React.memo(function FlowRow({
     return (
         <tr className={className} onClick={onClick} style={{ height }}>
             {displayColumns.map((Column) => (
-                <Column key={Column.name} flow={flow} rowNumber={rowNumber} />
+                <Column
+                    key={Column.name}
+                    flow={flow}
+                    rowNumber={rowNumber}
+                    sequenceNumber={sequenceNumber}
+                    captureStart={captureStart}
+                />
             ))}
             {/* Empty, but without a cell the row stops painting its background where the filler column starts. */}
             <td className="col-filler" />
