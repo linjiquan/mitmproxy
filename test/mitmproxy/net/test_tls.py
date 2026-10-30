@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric import ec
+from OpenSSL import crypto
 from OpenSSL import SSL
 
 from mitmproxy import certs
@@ -106,3 +107,40 @@ def test_is_dtls_record_magic():
 
 def test_get_curve():
     assert isinstance(tls.get_curve("secp256r1"), ec.SECP256R1)
+
+
+def test_default_ca_includes_system_roots(tdata, monkeypatch):
+    root = Path(tdata.path("mitmproxy/net/data/verificationcerts/trusted-root.crt"))
+    leaf = Path(tdata.path("mitmproxy/net/data/verificationcerts/trusted-leaf.crt"))
+    monkeypatch.setattr(tls, "default_ca_pem", lambda: root.read_bytes())
+    tls.create_proxy_server_context.cache_clear()
+    try:
+        kwargs = dict(
+            method=tls.Method.TLS_CLIENT_METHOD,
+            min_version=tls.DEFAULT_MIN_VERSION,
+            max_version=tls.DEFAULT_MAX_VERSION,
+            cipher_list=None,
+            ecdh_curve=None,
+            verify=tls.Verify.VERIFY_PEER,
+            ca_path=None,
+            client_cert=None,
+            legacy_server_connect=False,
+        )
+        certificate = crypto.load_certificate(crypto.FILETYPE_PEM, leaf.read_bytes())
+        context = tls.create_proxy_server_context(**kwargs, ca_pemfile=None)
+        crypto.X509StoreContext(
+            context.get_cert_store(), certificate
+        ).verify_certificate()
+
+        custom = tls.create_proxy_server_context(
+            **kwargs,
+            ca_pemfile=tdata.path(
+                "mitmproxy/net/data/verificationcerts/self-signed.crt"
+            ),
+        )
+        with pytest.raises(crypto.X509StoreContextError):
+            crypto.X509StoreContext(
+                custom.get_cert_store(), certificate
+            ).verify_certificate()
+    finally:
+        tls.create_proxy_server_context.cache_clear()

@@ -32,6 +32,8 @@ class QuicTlsSettings:
     """The certificate's private key."""
     cipher_suites: list[CipherSuite] | None = None
     """An optional list of allowed/advertised cipher suites."""
+    ca_data: bytes | None = None
+    """Optional PEM CA certificates used to verify the peer."""
     ca_path: str | None = None
     """An optional path to a directory that contains the necessary information to verify the peer certificate."""
     ca_file: str | None = None

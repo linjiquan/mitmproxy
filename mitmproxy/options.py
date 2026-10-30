@@ -192,7 +192,7 @@ class Options(optmanager.OptManager):
             "ssl_verify_upstream_trusted_ca",
             Optional[str],
             None,
-            "Path to a PEM formatted trusted CA certificate.",
+            "Path to a PEM formatted trusted CA certificate. By default, use certifi and system CA certificates.",
         )
         self.add_option(
             "tcp_hosts",

@@ -1,4 +1,8 @@
+import logging
 import os
+import ssl
+import subprocess
+import sys
 import threading
 import typing
 from collections.abc import Callable
@@ -12,10 +16,12 @@ from typing import BinaryIO
 
 import certifi
 import OpenSSL
+from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurveOID
 from cryptography.hazmat.primitives.asymmetric.ec import get_curve_for_oid
 from cryptography.x509 import ObjectIdentifier
+from OpenSSL import crypto
 from OpenSSL import SSL
 
 from mitmproxy import certs
@@ -191,6 +197,46 @@ def _create_ssl_context(
     return context
 
 
+@cache
+def default_ca_pem() -> bytes:
+    """Load certifi and system roots once per process, without temporary files.
+
+    macOS roots come from its System Roots keychain. Other platforms use
+    Python's default SSL store (including Windows' CA and ROOT stores).
+    This imports certificates, not native platform trust policies.
+    Restart mitmproxy after changing the system roots.
+    """
+    bundle = Path(certifi.where()).read_bytes()
+    try:
+        if sys.platform == "darwin":
+            system = subprocess.run(
+                [
+                    "/usr/bin/security",
+                    "find-certificate",
+                    "-a",
+                    "-p",
+                    "/System/Library/Keychains/SystemRootCertificates.keychain",
+                ],
+                capture_output=True,
+                check=True,
+                timeout=10,
+            ).stdout
+            if not system.strip():
+                raise ValueError("System Roots keychain contains no certificates")
+            x509.load_pem_x509_certificates(system)
+        else:
+            system = "".join(
+                ssl.DER_cert_to_PEM_cert(der)
+                for der in ssl.create_default_context().get_ca_certs(binary_form=True)
+            ).encode("ascii")
+    except (OSError, subprocess.SubprocessError, ValueError) as exc:
+        logging.getLogger(__name__).warning(
+            "Cannot load system CA certificates; using certifi only: %s", exc
+        )
+        system = b""
+    return bundle + b"\n" + system
+
+
 @lru_cache(256)
 def create_proxy_server_context(
     *,
@@ -214,10 +260,13 @@ def create_proxy_server_context(
     )
     context.set_verify(verify.value, None)
 
-    if ca_path is None and ca_pemfile is None:
-        ca_pemfile = certifi.where()
     try:
-        context.load_verify_locations(ca_pemfile, ca_path)
+        if ca_path is None and ca_pemfile is None:
+            store = context.get_cert_store()
+            for certificate in x509.load_pem_x509_certificates(default_ca_pem()):
+                store.add_cert(crypto.X509.from_cryptography(certificate))
+        else:
+            context.load_verify_locations(ca_pemfile, ca_path)
     except SSL.Error as e:
         raise RuntimeError(
             f"Cannot load trusted certificates ({ca_pemfile=}, {ca_path=})."

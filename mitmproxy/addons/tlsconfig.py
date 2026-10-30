@@ -491,6 +491,8 @@ class TlsConfig:
         # NOTE client certificates are not supported
         tls_start.settings.ca_path = ctx.options.ssl_verify_upstream_trusted_confdir
         tls_start.settings.ca_file = ctx.options.ssl_verify_upstream_trusted_ca
+        if tls_start.settings.ca_path is None and tls_start.settings.ca_file is None:
+            tls_start.settings.ca_data = net_tls.default_ca_pem()
 
     def running(self):
         # FIXME: We have a weird bug where the contract for configure is not followed and it is never called with
